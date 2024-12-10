@@ -3,14 +3,9 @@
 
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
-
-use embassy_stm32::time::{khz, mhz};
-use embassy_stm32::timer::low_level::CaptureCompare16bitInstance;
-use embassy_stm32::timer::{Channel, CountingMode};
+use embassy_stm32::gpio::{Input, Level, Output, Pull, Speed};
 use embassy_time::Timer;
-use embassy_stm32::{bind_interrupts, peripherals, timer, Config};
-use embassy_stm32::timer::simple_pwm::{PwmPin, SimplePwm};
+use embassy_stm32::{bind_interrupts, peripherals};
 
 use {defmt_rtt as _, panic_probe as _};
 
@@ -18,17 +13,19 @@ use {defmt_rtt as _, panic_probe as _};
 async fn blinky(led: peripherals::PC13) {
     let mut led = Output::new(led, Level::High, Speed::Low);
     loop {
-        info!("high");
+        // info!("high");
         led.set_high();
         Timer::after_millis(300).await;
-        info!("low");
+        // info!("low");
         led.set_low();
         Timer::after_millis(300).await;
     }
 }
 
 // bind_interrupts!(struct Irqs {
-//     TIM2 => timer::CaptureCompareInterruptHandler<peripherals::TIM2>;
+//     RNG_LPUART1 => rng::InterruptHandler<peripherals::RNG>;
+
+//     // TIM3 => embassy_stm32::usb::InterruptHandler<peripherals::TIM3>;
 // });
 
 #[embassy_executor::main]
@@ -38,14 +35,10 @@ async fn main(spawner: Spawner) {
 
     unwrap!(spawner.spawn(blinky(p.PC13)));
  
-    let step = PwmPin::new_ch1(p.PA6, OutputType::PushPull);
-    let mut pwm1 = SimplePwm::new(p.TIM3, Some(step), None, None, None, khz(20), CountingMode::EdgeAlignedUp);
-    let mut dir1 = Output::new(p.PA7, Level::High, Speed::Low);
-    let max_duty = pwm1.get_max_duty();
+    let a = Input::new(p.PA1, Pull::Down);
+    let b = Input::new(p.PA2, Pull::Down);
     loop {
-        pwm1.set_duty(timer::Channel::Ch1, max_duty * 7 / 10);
-        pwm1.enable(Channel::Ch1);
-        dir1.set_high();
-        Timer::after_millis(2000).await;
+        info!("a: {}, b: {}", a.get_level(), b.get_level());
+        Timer::after_millis(500).await;
     }
 }
